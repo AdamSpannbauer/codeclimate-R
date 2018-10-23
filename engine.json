@@ -1,0 +1,11 @@
+{
+  "name": "codeclimateR",
+  "description": "codeclimateR examines R source code and reports style violations & potential bugs.",
+  "maintainer": {
+    "name": "Adam Spannbauer",
+    "email": "spannbaueradam@gmail.com"
+  },
+  "languages" : ["R"],
+  "version": "0.0.1",
+  "spec_version": "0.0.1"
+}
