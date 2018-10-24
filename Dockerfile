@@ -4,7 +4,7 @@ LABEL maintainer "Adam Spannbauer <spannbaueradam@gmail.com>"
 
 WORKDIR /usr/src/app
 
-RUN R -e "install.packages('lintr', repos = 'http://cran.us.r-project.org')"
+RUN R -e "install.packages(c('lintr', 'jsonlite'), repos = 'http://cran.us.r-project.org')"
 
 RUN adduser -u 9000 --disabled-login app
 COPY . /usr/src/app

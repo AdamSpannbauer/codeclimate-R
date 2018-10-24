@@ -1,0 +1,32 @@
+#!/usr/bin/env Rscript
+
+library(tools)
+library(jsonlite)
+library(lintr)
+
+CONFIG_PATH = '/config.json'
+
+
+is_r_file = function(paths) {
+  vapply(paths, function(p) tools::file_ext(p) == 'R', logical(1L))
+}
+
+
+# pull include_paths field from config and extract R file paths to include_paths
+if (file.exists(CONFIG_PATH)) {
+  config = jsonlite::read_json(CONFIG_PATH)
+  config_include_paths = config[['include_paths']]
+  
+  include_paths = character(0)
+  for (path in config_include_paths) {
+    if (dir.exists(path)) {
+      paths_i = list.files(path, full.names = TRUE)
+    } else {
+      paths_i = path
+    }
+    
+    r_paths_i = paths_i[is_r_file(paths_i)]
+    
+    include_paths = c(include_paths, r_paths_i)
+  }
+}
