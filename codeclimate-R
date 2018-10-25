@@ -4,29 +4,97 @@ library(tools)
 library(jsonlite)
 library(lintr)
 
-CONFIG_PATH = '/config.json'
+
+CONFIG_PATH = './config.json'
+# TODO: DELETE THIS
+FORCE_R_EXTENSION = FALSE
 
 
 is_r_file = function(paths) {
-  vapply(paths, function(p) tools::file_ext(p) == 'R', logical(1L))
+  #' Flag which elements of character vector have R extension
+  #' 
+  #' @param paths character vector of file paths to check for R extension
+  #' @return logical vector of equal length to paths with TRUE elements
+  #'         corresponding to R files in paths
+  vapply(paths, function(p) toupper(tools::file_ext(p)) == 'R', logical(1L))
 }
 
 
-# pull include_paths field from config and extract R file paths to include_paths
-if (file.exists(CONFIG_PATH)) {
-  config = jsonlite::read_json(CONFIG_PATH)
-  config_include_paths = config[['include_paths']]
+safe_list_files = function(path, ...) {
+  #' list.files wrapper that returns path as is if it's not a dir
+  #' 
+  #' @param path path to file or dir
+  #' @param ... additional args to be passed to list.files
+  #' @return result of list.files(path) unless path is not a dir
+  if (!dir.exists(path)) return(path)
+  list.files(path, ...)
+}
+
+
+parse_config_include_paths = function(config_include_paths) {
+  #' Parse include_paths value from config.json for applying lintr::lint
+  #' 
+  #' @param config_include_paths include_paths character vector from config.json
+  #' @return character vector of included paths with dir's files listed
+  include_paths = NULL
   
-  include_paths = character(0)
   for (path in config_include_paths) {
-    if (dir.exists(path)) {
-      paths_i = list.files(path, full.names = TRUE)
-    } else {
-      paths_i = path
-    }
+    files = safe_list_files(path, full.names = TRUE)
+    r_files = files[is_r_file(files)]
     
-    r_paths_i = paths_i[is_r_file(paths_i)]
+    # TODO: DELETE THIS
+    if (!FORCE_R_EXTENSION) r_files = files
     
-    include_paths = c(include_paths, r_paths_i)
+    include_paths = c(include_paths, r_files)
   }
+  
+  return(include_paths)
 }
+
+
+parse_config = function(config_path) {
+  #' Parse config.json into cleaned list for linting
+  #' 
+  #' @param config_path path to config.json
+  #' @return config.json as a list cleaned for downstream processing
+  if (!file.exists(config_path)) return(NULL)
+  
+  config_list = jsonlite::read_json(config_path)
+  
+  config_list$include_paths = 
+    parse_config_include_paths(config_list$include_paths)
+  
+  return(config_list)
+}
+
+
+lints_to_list = function(lints_obj) {
+  #' Recursively convert a lintr 'lints' object to a list for jsonlite
+  #' 
+  #' @param lints_obj a lintr 'lints' object (output of lintr::lint)
+  #' @return a list containing lintr results
+  class(lints_obj) = 'list'
+  
+  lapply(lints_obj, function(l) {
+    if (!is.list(l)) return(l)
+    lints_to_list(l)
+  })
+}
+
+
+format_lintr_output = function(lintr_output, pretty = TRUE) {
+  #' Format output of lintr::lint as codeclimate report
+  #' 
+  #' @param lintr_output result of applying lintr::lint to include_paths
+  #' @return lintr results in a codeclimate friendly format
+  
+  # TODO: actually format for codeclimate; for now just converts to json
+  lintr_output_list = lapply(lintr_output, lints_to_list)
+  jsonlite::toJSON(lintr_output_list, pretty = pretty)
+}
+
+config_list = parse_config(CONFIG_PATH)
+lintr_output = lapply(config_list$include_paths, lintr::lint)
+codeclimate_report = format_lintr_output(lintr_output)
+
+print(codeclimate_report)
