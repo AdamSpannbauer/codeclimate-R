@@ -1,4 +1,4 @@
-FROM rocker/r-base:latest
+FROM rocker/rstudio:latest
 
 LABEL maintainer "Adam Spannbauer <spannbaueradam@gmail.com>"
 
