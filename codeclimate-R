@@ -5,9 +5,7 @@ library(jsonlite)
 library(lintr)
 
 
-CONFIG_PATH = './config.json'
-# TODO: DELETE THIS
-FORCE_R_EXTENSION = FALSE
+CONFIG_PATH = 'test_assets/config.json'
 
 
 is_r_file = function(paths) {
@@ -41,9 +39,6 @@ parse_config_include_paths = function(config_include_paths) {
   for (path in config_include_paths) {
     files = safe_list_files(path, full.names = TRUE)
     r_files = files[is_r_file(files)]
-    
-    # TODO: DELETE THIS
-    if (!FORCE_R_EXTENSION) r_files = files
     
     include_paths = c(include_paths, r_files)
   }
@@ -98,3 +93,4 @@ lintr_output = lapply(config_list$include_paths, lintr::lint)
 codeclimate_report = format_lintr_output(lintr_output)
 
 print(codeclimate_report)
+cat('finished without error\n')
