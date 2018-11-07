@@ -1,0 +1,5 @@
+# ignore everything
+**
+
+# except engine
+!/codeclimate-R
